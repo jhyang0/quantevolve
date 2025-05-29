@@ -8,12 +8,55 @@ to guide the LLM in evolving quantitative trading strategies.
 import os
 from pathlib import Path
 from typing import Dict, List, Optional, Union
+from ..utils.talib_indicators_registry import (
+    generate_indicator_description_for_llm,
+    get_strategy_relevant_indicators,
+    TALIB_INDICATORS_REGISTRY
+)
 
 # Base system message template for trading strategy evolution
 BASE_SYSTEM_TEMPLATE = """You are an expert quantitative trader and algorithm developer tasked with iteratively improving trading strategies.
 Your job is to analyze the current trading strategy and suggest improvements based on performance feedback from previous versions.
 Focus on making targeted changes that will improve financial metrics such as Sharpe ratio, profit and loss (PnL), maximum drawdown, and risk-adjusted returns.
 You should understand concepts like technical indicators, risk management, position sizing, market regimes, and alpha generation.
+
+## Available Technical Indicators
+You have access to a comprehensive library of TA-Lib technical indicators organized by category:
+
+### Trend Following Indicators
+- Moving Averages: SMA, EMA, WMA, DEMA, TEMA, TRIMA, KAMA, T3
+- Trend Analysis: MACD, MACDEXT, MACDFIX, PPO, APO, LINEARREG, TSF, HT_TRENDLINE
+- Directional: ADX, ADXR, DX, PLUS_DI, MINUS_DI, SAR, SAREXT
+
+### Momentum Indicators
+- Oscillators: RSI, STOCH, STOCHF, STOCHRSI, WILLR, CCI, MFI, ULTOSC, CMO
+- Rate of Change: MOM, ROC, ROCP, ROCR, ROCR100, TRIX
+- Directional Movement: AROON, AROONOSC, BOP
+
+### Volatility Indicators
+- Range: ATR, NATR, TRANGE
+- Bands: BBANDS (Bollinger Bands)
+- Statistical: STDDEV, VAR
+
+### Volume Indicators
+- Volume Analysis: OBV, AD, ADOSC, MFI
+
+### Pattern Recognition
+- Candlestick Patterns: CDLDOJI, CDLHAMMER, CDLENGULFING, CDLMORNINGSTAR, CDLEVENINGSTAR
+- And 60+ other candlestick patterns for reversal and continuation signals
+
+### Cycle Analysis
+- Hilbert Transform: HT_DCPERIOD, HT_DCPHASE, HT_PHASOR, HT_SINE, HT_TRENDMODE
+
+### Statistical Functions
+- Regression: LINEARREG, LINEARREG_ANGLE, LINEARREG_SLOPE, LINEARREG_INTERCEPT
+- Correlation: CORREL, BETA
+- Forecasting: TSF (Time Series Forecast)
+
+### Price Transform
+- Price Calculations: AVGPRICE, MEDPRICE, TYPPRICE, WCLPRICE
+
+When suggesting improvements, consider using combinations of these indicators to create more sophisticated trading signals, improve entry/exit timing, and implement better risk management.
 """
 
 # User message template for diff-based trading strategy evolution
@@ -163,3 +206,34 @@ class TemplateManager:
     def add_template(self, template_name: str, template: str) -> None:
         """Add or update a template"""
         self.templates[template_name] = template
+    
+    def get_enhanced_system_template(self) -> str:
+        """Get system template with comprehensive indicator information"""
+        indicator_details = generate_indicator_description_for_llm()
+        enhanced_template = self.templates["system_message"]
+        return enhanced_template
+    
+    def get_strategy_suggestions_by_type(self, strategy_type: str = "trend_following") -> str:
+        """Get indicator suggestions for specific strategy types"""
+        strategy_indicators = get_strategy_relevant_indicators()
+        
+        if strategy_type not in strategy_indicators:
+            return "Available strategy types: " + ", ".join(strategy_indicators.keys())
+        
+        indicators = strategy_indicators[strategy_type]
+        suggestions = f"## {strategy_type.replace('_', ' ').title()} Strategy Indicators\n\n"
+        
+        for indicator in indicators:
+            # Get indicator info from registry
+            for category_data in TALIB_INDICATORS_REGISTRY.values():
+                if indicator in category_data.get('indicators', {}):
+                    info = category_data['indicators'][indicator]
+                    suggestions += f"### {indicator}\n"
+                    suggestions += f"**{info['name']}**: {info['description']}\n"
+                    if info['params']:
+                        params = ', '.join([f"{k}={v}" for k, v in info['params'].items()])
+                        suggestions += f"**Parameters**: {params}\n"
+                    suggestions += "\n"
+                    break
+        
+        return suggestions
