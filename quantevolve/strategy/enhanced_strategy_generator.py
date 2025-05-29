@@ -14,17 +14,14 @@ from ..utils.indicators import (
     generate_multi_indicator_signals,
     get_available_indicators_for_data,
     crossover,
-    crossunder
+    crossunder,
 )
-from ..utils.talib_indicators_registry import (
-    get_strategy_relevant_indicators,
-    get_indicator_info
-)
+from ..utils.talib_indicators_registry import get_strategy_relevant_indicators, get_indicator_info
 
 
 class EnhancedStrategyGenerator:
     """Enhanced strategy generator with comprehensive TA-Lib indicator support"""
-    
+
     def __init__(self):
         self.strategy_templates = {
             "trend_following": self._generate_trend_following_strategy,
@@ -33,30 +30,33 @@ class EnhancedStrategyGenerator:
             "multi_indicator": self._generate_multi_indicator_strategy,
             "adaptive": self._generate_adaptive_strategy,
             "breakout": self._generate_breakout_strategy,
-            "volatility_based": self._generate_volatility_based_strategy
+            "volatility_based": self._generate_volatility_based_strategy,
         }
-    
-    def generate_strategy(self, strategy_type: str = "multi_indicator", 
-                         config: Optional[Dict[str, Any]] = None) -> str:
+
+    def generate_strategy(
+        self, strategy_type: str = "multi_indicator", config: Optional[Dict[str, Any]] = None
+    ) -> str:
         """
         Generate a trading strategy of the specified type.
-        
+
         Args:
             strategy_type (str): Type of strategy to generate
             config (Dict): Configuration parameters for strategy generation
-            
+
         Returns:
             str: Generated strategy code
         """
         if strategy_type not in self.strategy_templates:
             available_types = ", ".join(self.strategy_templates.keys())
-            raise ValueError(f"Unknown strategy type: {strategy_type}. Available: {available_types}")
-        
+            raise ValueError(
+                f"Unknown strategy type: {strategy_type}. Available: {available_types}"
+            )
+
         if config is None:
             config = self._get_default_config(strategy_type)
-        
+
         return self.strategy_templates[strategy_type](config)
-    
+
     def _get_default_config(self, strategy_type: str) -> Dict[str, Any]:
         """Get default configuration for strategy type"""
         default_configs = {
@@ -65,7 +65,7 @@ class EnhancedStrategyGenerator:
                 "slow_period": 30,
                 "use_adx": True,
                 "adx_threshold": 25,
-                "use_volume": False
+                "use_volume": False,
             },
             "mean_reversion": {
                 "rsi_period": 14,
@@ -73,40 +73,40 @@ class EnhancedStrategyGenerator:
                 "rsi_overbought": 70,
                 "bb_period": 20,
                 "bb_std": 2.0,
-                "use_stoch": True
+                "use_stoch": True,
             },
             "momentum": {
                 "macd_fast": 12,
                 "macd_slow": 26,
                 "macd_signal": 9,
                 "roc_period": 10,
-                "mom_period": 14
+                "mom_period": 14,
             },
             "multi_indicator": {
                 "categories": ["momentum", "trend", "volatility"],
                 "confirmation_count": 2,
-                "use_volume": True
+                "use_volume": True,
             },
             "adaptive": {
                 "regime_indicator": "ADX",
                 "regime_threshold": 25,
                 "trending_strategy": "trend_following",
-                "ranging_strategy": "mean_reversion"
+                "ranging_strategy": "mean_reversion",
             },
             "breakout": {
                 "bb_period": 20,
                 "bb_std": 2.0,
                 "volume_multiplier": 1.5,
-                "atr_period": 14
+                "atr_period": 14,
             },
             "volatility_based": {
                 "atr_period": 14,
                 "volatility_threshold": 1.5,
-                "position_sizing": "atr_based"
-            }
+                "position_sizing": "atr_based",
+            },
         }
         return default_configs.get(strategy_type, {})
-    
+
     def _generate_trend_following_strategy(self, config: Dict[str, Any]) -> str:
         """Generate a trend-following strategy using multiple indicators"""
         fast_period = config.get("fast_period", 10)
@@ -114,7 +114,7 @@ class EnhancedStrategyGenerator:
         use_adx = config.get("use_adx", True)
         adx_threshold = config.get("adx_threshold", 25)
         use_volume = config.get("use_volume", False)
-        
+
         strategy_code = f'''import numpy as np
 import pandas as pd
 from quantevolve.utils.indicators import calculate_indicator, add_trend_indicators, crossover, crossunder
@@ -213,7 +213,7 @@ def get_trading_signals_func():
     return run_strategy
 '''
         return strategy_code
-    
+
     def _generate_mean_reversion_strategy(self, config: Dict[str, Any]) -> str:
         """Generate a mean reversion strategy using RSI, Bollinger Bands, and Stochastic"""
         rsi_period = config.get("rsi_period", 14)
@@ -222,7 +222,7 @@ def get_trading_signals_func():
         bb_period = config.get("bb_period", 20)
         bb_std = config.get("bb_std", 2.0)
         use_stoch = config.get("use_stoch", True)
-        
+
         strategy_code = f'''import numpy as np
 import pandas as pd
 from quantevolve.utils.indicators import calculate_indicator, crossover, crossunder
@@ -326,13 +326,13 @@ def get_trading_signals_func():
     return run_strategy
 '''
         return strategy_code
-    
+
     def _generate_multi_indicator_strategy(self, config: Dict[str, Any]) -> str:
         """Generate a strategy that uses multiple indicator categories"""
         categories = config.get("categories", ["momentum", "trend", "volatility"])
         confirmation_count = config.get("confirmation_count", 2)
         use_volume = config.get("use_volume", True)
-        
+
         strategy_code = f'''import numpy as np
 import pandas as pd
 from quantevolve.utils.indicators import (
@@ -460,27 +460,27 @@ def get_trading_signals_func():
     return run_strategy
 '''
         return strategy_code
-    
+
     def _generate_momentum_strategy(self, config: Dict[str, Any]) -> str:
         """Generate a momentum-based strategy"""
         return self._generate_trend_following_strategy(config)  # Placeholder
-    
+
     def _generate_adaptive_strategy(self, config: Dict[str, Any]) -> str:
         """Generate an adaptive strategy that switches between different approaches"""
         return self._generate_multi_indicator_strategy(config)  # Placeholder
-    
+
     def _generate_breakout_strategy(self, config: Dict[str, Any]) -> str:
         """Generate a breakout strategy using Bollinger Bands and volume"""
         return self._generate_multi_indicator_strategy(config)  # Placeholder
-    
+
     def _generate_volatility_based_strategy(self, config: Dict[str, Any]) -> str:
         """Generate a volatility-based strategy using ATR"""
         return self._generate_multi_indicator_strategy(config)  # Placeholder
-    
+
     def get_available_strategies(self) -> List[str]:
         """Get list of available strategy types"""
         return list(self.strategy_templates.keys())
-    
+
     def get_strategy_description(self, strategy_type: str) -> str:
         """Get description of a specific strategy type"""
         descriptions = {
@@ -490,21 +490,22 @@ def get_trading_signals_func():
             "multi_indicator": "Combines multiple indicator categories with confirmation requirements",
             "adaptive": "Switches between strategies based on market regime detection",
             "breakout": "Identifies breakouts using volatility and volume indicators",
-            "volatility_based": "Uses volatility measures for position sizing and risk management"
+            "volatility_based": "Uses volatility measures for position sizing and risk management",
         }
         return descriptions.get(strategy_type, "No description available")
 
 
 # Convenience functions for direct use
-def generate_enhanced_strategy(strategy_type: str = "multi_indicator", 
-                             config: Optional[Dict[str, Any]] = None) -> str:
+def generate_enhanced_strategy(
+    strategy_type: str = "multi_indicator", config: Optional[Dict[str, Any]] = None
+) -> str:
     """
     Generate an enhanced trading strategy using comprehensive TA-Lib indicators.
-    
+
     Args:
         strategy_type (str): Type of strategy to generate
         config (Dict): Configuration parameters
-        
+
     Returns:
         str: Generated strategy code
     """
@@ -515,27 +516,25 @@ def generate_enhanced_strategy(strategy_type: str = "multi_indicator",
 def get_strategy_suggestions(data_columns: List[str]) -> Dict[str, List[str]]:
     """
     Get strategy suggestions based on available data columns.
-    
+
     Args:
         data_columns (List[str]): Available data columns
-        
+
     Returns:
         Dict[str, List[str]]: Suggested strategies by category
     """
-    suggestions = {
-        "basic": [],
-        "advanced": [],
-        "volume_based": []
-    }
-    
-    has_ohlc = all(col in [c.lower() for c in data_columns] for col in ['open', 'high', 'low', 'close'])
-    has_volume = any(col.lower() == 'volume' for col in data_columns)
-    
+    suggestions = {"basic": [], "advanced": [], "volume_based": []}
+
+    has_ohlc = all(
+        col in [c.lower() for c in data_columns] for col in ["open", "high", "low", "close"]
+    )
+    has_volume = any(col.lower() == "volume" for col in data_columns)
+
     if has_ohlc:
         suggestions["basic"].extend(["trend_following", "mean_reversion", "momentum"])
         suggestions["advanced"].extend(["multi_indicator", "adaptive", "breakout"])
-        
+
         if has_volume:
             suggestions["volume_based"].extend(["multi_indicator", "breakout", "volatility_based"])
-    
+
     return suggestions

@@ -11,7 +11,7 @@ from typing import Dict, List, Optional, Union
 from ..utils.talib_indicators_registry import (
     generate_indicator_description_for_llm,
     get_strategy_relevant_indicators,
-    TALIB_INDICATORS_REGISTRY
+    TALIB_INDICATORS_REGISTRY,
 )
 
 # Base system message template for trading strategy evolution
@@ -206,34 +206,34 @@ class TemplateManager:
     def add_template(self, template_name: str, template: str) -> None:
         """Add or update a template"""
         self.templates[template_name] = template
-    
+
     def get_enhanced_system_template(self) -> str:
         """Get system template with comprehensive indicator information"""
         indicator_details = generate_indicator_description_for_llm()
         enhanced_template = self.templates["system_message"]
         return enhanced_template
-    
+
     def get_strategy_suggestions_by_type(self, strategy_type: str = "trend_following") -> str:
         """Get indicator suggestions for specific strategy types"""
         strategy_indicators = get_strategy_relevant_indicators()
-        
+
         if strategy_type not in strategy_indicators:
             return "Available strategy types: " + ", ".join(strategy_indicators.keys())
-        
+
         indicators = strategy_indicators[strategy_type]
         suggestions = f"## {strategy_type.replace('_', ' ').title()} Strategy Indicators\n\n"
-        
+
         for indicator in indicators:
             # Get indicator info from registry
             for category_data in TALIB_INDICATORS_REGISTRY.values():
-                if indicator in category_data.get('indicators', {}):
-                    info = category_data['indicators'][indicator]
+                if indicator in category_data.get("indicators", {}):
+                    info = category_data["indicators"][indicator]
                     suggestions += f"### {indicator}\n"
                     suggestions += f"**{info['name']}**: {info['description']}\n"
-                    if info['params']:
-                        params = ', '.join([f"{k}={v}" for k, v in info['params'].items()])
+                    if info["params"]:
+                        params = ", ".join([f"{k}={v}" for k, v in info["params"].items()])
                         suggestions += f"**Parameters**: {params}\n"
                     suggestions += "\n"
                     break
-        
+
         return suggestions

@@ -21,7 +21,7 @@ from .talib_indicators_registry import (
     get_indicators_requiring_volume,
     get_indicators_by_input_requirements,
     get_strategy_relevant_indicators,
-    generate_indicator_description_for_llm
+    generate_indicator_description_for_llm,
 )
 
 
@@ -523,54 +523,55 @@ def add_all_indicators(df, indicators=None):
 
 # === COMPREHENSIVE TA-LIB INDICATOR FUNCTIONS ===
 
+
 def calculate_indicator(df: pd.DataFrame, indicator_name: str, **kwargs) -> pd.DataFrame:
     """
     Calculate any TA-Lib indicator using the abstract interface.
-    
+
     Args:
         df (pd.DataFrame): DataFrame with market data
         indicator_name (str): Name of the TA-Lib indicator (e.g., 'RSI', 'MACD', 'BBANDS')
         **kwargs: Additional parameters for the indicator
-    
+
     Returns:
         pd.DataFrame: DataFrame with the calculated indicator added
     """
     result_df = df.copy()
-    
+
     try:
         # Get indicator information from registry
         indicator_info = get_indicator_info(indicator_name)
         if not indicator_info:
             raise ValueError(f"Indicator '{indicator_name}' not found in registry")
-        
+
         # Prepare inputs for TA-Lib
         inputs = _prepare_inputs(df)
-        
+
         # Check if required inputs are available
-        required_inputs = indicator_info.get('inputs', [])
+        required_inputs = indicator_info.get("inputs", [])
         for req_input in required_inputs:
             if req_input not in inputs:
                 raise ValueError(f"Required input '{req_input}' not found in DataFrame")
-        
+
         # Get default parameters and update with kwargs
-        params = indicator_info.get('params', {}).copy()
+        params = indicator_info.get("params", {}).copy()
         params.update(kwargs)
-        
+
         # Calculate indicator using TA-Lib abstract interface
         indicator_func = getattr(abstract, indicator_name)
-        
+
         # Prepare the input dictionary for the indicator
         func_inputs = {key: inputs[key] for key in required_inputs if key in inputs}
-        
+
         # Calculate the indicator
         if params:
             output = indicator_func(func_inputs, **params)
         else:
             output = indicator_func(func_inputs)
-        
+
         # Handle different output types
-        output_names = indicator_info.get('outputs', [indicator_name.lower()])
-        
+        output_names = indicator_info.get("outputs", [indicator_name.lower()])
+
         if isinstance(output, np.ndarray):
             # Single output
             result_df[output_names[0]] = output
@@ -582,214 +583,226 @@ def calculate_indicator(df: pd.DataFrame, indicator_name: str, **kwargs) -> pd.D
         else:
             # Handle other types
             result_df[output_names[0]] = output
-            
+
     except Exception as e:
         print(f"Error calculating indicator {indicator_name}: {str(e)}")
-        
+
     return result_df
 
 
-def add_momentum_indicators(df: pd.DataFrame, indicators: Optional[List[str]] = None) -> pd.DataFrame:
+def add_momentum_indicators(
+    df: pd.DataFrame, indicators: Optional[List[str]] = None
+) -> pd.DataFrame:
     """
     Add multiple momentum indicators to the dataframe.
-    
+
     Args:
         df (pd.DataFrame): DataFrame with market data
         indicators (List[str]): List of momentum indicators to add
                                 Default: ['RSI', 'MACD', 'STOCH', 'MOM', 'ROC']
-    
+
     Returns:
         pd.DataFrame: DataFrame with added momentum indicators
     """
     result_df = df.copy()
-    
+
     if indicators is None:
-        indicators = ['RSI', 'MACD', 'STOCH', 'MOM', 'ROC']
-    
+        indicators = ["RSI", "MACD", "STOCH", "MOM", "ROC"]
+
     for indicator in indicators:
         try:
             result_df = calculate_indicator(result_df, indicator)
         except Exception as e:
             print(f"Warning: Could not calculate {indicator}: {str(e)}")
-    
+
     return result_df
 
 
 def add_trend_indicators(df: pd.DataFrame, indicators: Optional[List[str]] = None) -> pd.DataFrame:
     """
     Add multiple trend-following indicators to the dataframe.
-    
+
     Args:
         df (pd.DataFrame): DataFrame with market data
         indicators (List[str]): List of trend indicators to add
                                 Default: ['SMA', 'EMA', 'MACD', 'ADX', 'SAR']
-    
+
     Returns:
         pd.DataFrame: DataFrame with added trend indicators
     """
     result_df = df.copy()
-    
+
     if indicators is None:
-        indicators = ['SMA', 'EMA', 'MACD', 'ADX', 'SAR']
-    
+        indicators = ["SMA", "EMA", "MACD", "ADX", "SAR"]
+
     for indicator in indicators:
         try:
             result_df = calculate_indicator(result_df, indicator)
         except Exception as e:
             print(f"Warning: Could not calculate {indicator}: {str(e)}")
-    
+
     return result_df
 
 
-def add_volatility_indicators(df: pd.DataFrame, indicators: Optional[List[str]] = None) -> pd.DataFrame:
+def add_volatility_indicators(
+    df: pd.DataFrame, indicators: Optional[List[str]] = None
+) -> pd.DataFrame:
     """
     Add multiple volatility indicators to the dataframe.
-    
+
     Args:
         df (pd.DataFrame): DataFrame with market data
         indicators (List[str]): List of volatility indicators to add
                                 Default: ['ATR', 'BBANDS', 'NATR']
-    
+
     Returns:
         pd.DataFrame: DataFrame with added volatility indicators
     """
     result_df = df.copy()
-    
+
     if indicators is None:
-        indicators = ['ATR', 'BBANDS', 'NATR']
-    
+        indicators = ["ATR", "BBANDS", "NATR"]
+
     for indicator in indicators:
         try:
             result_df = calculate_indicator(result_df, indicator)
         except Exception as e:
             print(f"Warning: Could not calculate {indicator}: {str(e)}")
-    
+
     return result_df
 
 
 def add_volume_indicators(df: pd.DataFrame, indicators: Optional[List[str]] = None) -> pd.DataFrame:
     """
     Add multiple volume-based indicators to the dataframe.
-    
+
     Args:
         df (pd.DataFrame): DataFrame with market data (must include volume)
         indicators (List[str]): List of volume indicators to add
                                 Default: ['OBV', 'AD', 'ADOSC', 'MFI']
-    
+
     Returns:
         pd.DataFrame: DataFrame with added volume indicators
     """
     result_df = df.copy()
-    
+
     if indicators is None:
-        indicators = ['OBV', 'AD', 'ADOSC', 'MFI']
-    
+        indicators = ["OBV", "AD", "ADOSC", "MFI"]
+
     # Check if volume data is available
-    if 'volume' not in result_df.columns and 'Volume' not in result_df.columns:
+    if "volume" not in result_df.columns and "Volume" not in result_df.columns:
         print("Warning: Volume data not available for volume indicators")
         return result_df
-    
+
     for indicator in indicators:
         try:
             result_df = calculate_indicator(result_df, indicator)
         except Exception as e:
             print(f"Warning: Could not calculate {indicator}: {str(e)}")
-    
+
     return result_df
 
 
 def add_pattern_recognition(df: pd.DataFrame, patterns: Optional[List[str]] = None) -> pd.DataFrame:
     """
     Add candlestick pattern recognition indicators to the dataframe.
-    
+
     Args:
         df (pd.DataFrame): DataFrame with OHLC data
         patterns (List[str]): List of pattern indicators to add
                               Default: ['CDLDOJI', 'CDLHAMMER', 'CDLENGULFING', 'CDLMORNINGSTAR', 'CDLEVENINGSTAR']
-    
+
     Returns:
         pd.DataFrame: DataFrame with added pattern recognition indicators
     """
     result_df = df.copy()
-    
+
     if patterns is None:
-        patterns = ['CDLDOJI', 'CDLHAMMER', 'CDLENGULFING', 'CDLMORNINGSTAR', 'CDLEVENINGSTAR']
-    
+        patterns = ["CDLDOJI", "CDLHAMMER", "CDLENGULFING", "CDLMORNINGSTAR", "CDLEVENINGSTAR"]
+
     # Check if OHLC data is available
-    required_cols = ['open', 'high', 'low', 'close']
-    available_cols = [col for col in required_cols if col in result_df.columns or col.capitalize() in result_df.columns]
-    
+    required_cols = ["open", "high", "low", "close"]
+    available_cols = [
+        col
+        for col in required_cols
+        if col in result_df.columns or col.capitalize() in result_df.columns
+    ]
+
     if len(available_cols) < 4:
         print("Warning: Full OHLC data not available for pattern recognition")
         return result_df
-    
+
     for pattern in patterns:
         try:
             result_df = calculate_indicator(result_df, pattern)
         except Exception as e:
             print(f"Warning: Could not calculate {pattern}: {str(e)}")
-    
+
     return result_df
 
 
 def add_cycle_indicators(df: pd.DataFrame, indicators: Optional[List[str]] = None) -> pd.DataFrame:
     """
     Add cycle analysis indicators to the dataframe.
-    
+
     Args:
         df (pd.DataFrame): DataFrame with market data
         indicators (List[str]): List of cycle indicators to add
                                 Default: ['HT_DCPERIOD', 'HT_SINE', 'HT_TRENDMODE']
-    
+
     Returns:
         pd.DataFrame: DataFrame with added cycle indicators
     """
     result_df = df.copy()
-    
+
     if indicators is None:
-        indicators = ['HT_DCPERIOD', 'HT_SINE', 'HT_TRENDMODE']
-    
+        indicators = ["HT_DCPERIOD", "HT_SINE", "HT_TRENDMODE"]
+
     for indicator in indicators:
         try:
             result_df = calculate_indicator(result_df, indicator)
         except Exception as e:
             print(f"Warning: Could not calculate {indicator}: {str(e)}")
-    
+
     return result_df
 
 
-def add_statistical_indicators(df: pd.DataFrame, indicators: Optional[List[str]] = None) -> pd.DataFrame:
+def add_statistical_indicators(
+    df: pd.DataFrame, indicators: Optional[List[str]] = None
+) -> pd.DataFrame:
     """
     Add statistical function indicators to the dataframe.
-    
+
     Args:
         df (pd.DataFrame): DataFrame with market data
         indicators (List[str]): List of statistical indicators to add
                                 Default: ['LINEARREG', 'STDDEV', 'CORREL', 'BETA']
-    
+
     Returns:
         pd.DataFrame: DataFrame with added statistical indicators
     """
     result_df = df.copy()
-    
+
     if indicators is None:
-        indicators = ['LINEARREG', 'STDDEV', 'TSF']
-    
+        indicators = ["LINEARREG", "STDDEV", "TSF"]
+
     for indicator in indicators:
         try:
             result_df = calculate_indicator(result_df, indicator)
         except Exception as e:
             print(f"Warning: Could not calculate {indicator}: {str(e)}")
-    
+
     return result_df
 
 
-def add_comprehensive_indicators(df: pd.DataFrame, 
-                                categories: Optional[List[str]] = None,
-                                custom_indicators: Optional[Dict[str, Dict]] = None) -> pd.DataFrame:
+def add_comprehensive_indicators(
+    df: pd.DataFrame,
+    categories: Optional[List[str]] = None,
+    custom_indicators: Optional[Dict[str, Dict]] = None,
+) -> pd.DataFrame:
     """
     Add a comprehensive set of technical indicators across multiple categories.
-    
+
     Args:
         df (pd.DataFrame): DataFrame with market data
         categories (List[str]): List of indicator categories to include
@@ -797,25 +810,25 @@ def add_comprehensive_indicators(df: pd.DataFrame,
                                 Default: ['momentum', 'trend', 'volatility']
         custom_indicators (Dict[str, Dict]): Custom indicator configurations
                                             Format: {'INDICATOR_NAME': {'param1': value1, 'param2': value2}}
-    
+
     Returns:
         pd.DataFrame: DataFrame with comprehensive technical indicators
     """
     result_df = df.copy()
-    
+
     if categories is None:
-        categories = ['momentum', 'trend', 'volatility']
-    
+        categories = ["momentum", "trend", "volatility"]
+
     category_functions = {
-        'momentum': add_momentum_indicators,
-        'trend': add_trend_indicators,
-        'volatility': add_volatility_indicators,
-        'volume': add_volume_indicators,
-        'pattern': add_pattern_recognition,
-        'cycle': add_cycle_indicators,
-        'statistical': add_statistical_indicators
+        "momentum": add_momentum_indicators,
+        "trend": add_trend_indicators,
+        "volatility": add_volatility_indicators,
+        "volume": add_volume_indicators,
+        "pattern": add_pattern_recognition,
+        "cycle": add_cycle_indicators,
+        "statistical": add_statistical_indicators,
     }
-    
+
     # Add indicators by category
     for category in categories:
         if category in category_functions:
@@ -823,7 +836,7 @@ def add_comprehensive_indicators(df: pd.DataFrame,
                 result_df = category_functions[category](result_df)
             except Exception as e:
                 print(f"Warning: Error adding {category} indicators: {str(e)}")
-    
+
     # Add custom indicators
     if custom_indicators:
         for indicator_name, params in custom_indicators.items():
@@ -831,147 +844,158 @@ def add_comprehensive_indicators(df: pd.DataFrame,
                 result_df = calculate_indicator(result_df, indicator_name, **params)
             except Exception as e:
                 print(f"Warning: Could not calculate custom indicator {indicator_name}: {str(e)}")
-    
+
     return result_df
 
 
 def get_available_indicators_for_data(df: pd.DataFrame) -> Dict[str, List[str]]:
     """
     Get list of indicators that can be calculated with the available data.
-    
+
     Args:
         df (pd.DataFrame): DataFrame with market data
-    
+
     Returns:
         Dict[str, List[str]]: Dictionary mapping categories to available indicators
     """
     available_columns = [col.lower() for col in df.columns]
-    
+
     # Map common column variations
     column_mapping = {
-        'open': ['open', 'Open', 'OPEN'],
-        'high': ['high', 'High', 'HIGH'],
-        'low': ['low', 'Low', 'LOW'],
-        'close': ['close', 'Close', 'CLOSE'],
-        'volume': ['volume', 'Volume', 'VOLUME']
+        "open": ["open", "Open", "OPEN"],
+        "high": ["high", "High", "HIGH"],
+        "low": ["low", "Low", "LOW"],
+        "close": ["close", "Close", "CLOSE"],
+        "volume": ["volume", "Volume", "VOLUME"],
     }
-    
+
     normalized_columns = set()
     for standard_name, variations in column_mapping.items():
         for variation in variations:
             if variation in df.columns:
                 normalized_columns.add(standard_name)
                 break
-    
+
     available_by_category = {}
-    
+
     for category, category_data in TALIB_INDICATORS_REGISTRY.items():
         available_indicators = []
-        
-        for indicator_name, indicator_info in category_data.get('indicators', {}).items():
-            required_inputs = set(indicator_info.get('inputs', []))
+
+        for indicator_name, indicator_info in category_data.get("indicators", {}).items():
+            required_inputs = set(indicator_info.get("inputs", []))
             if required_inputs.issubset(normalized_columns):
                 available_indicators.append(indicator_name)
-        
+
         if available_indicators:
             available_by_category[category] = available_indicators
-    
+
     return available_by_category
 
 
 def create_indicator_summary(df: pd.DataFrame) -> pd.DataFrame:
     """
     Create a summary of calculated indicators with their latest values.
-    
+
     Args:
         df (pd.DataFrame): DataFrame with calculated indicators
-    
+
     Returns:
         pd.DataFrame: Summary of indicator values
     """
     # Get non-OHLCV columns (these are likely indicators)
-    base_columns = {'open', 'high', 'low', 'close', 'volume', 'timestamp', 'date'}
-    indicator_columns = [col for col in df.columns 
-                        if col.lower() not in base_columns and not col.lower().startswith('cdl')]
-    
+    base_columns = {"open", "high", "low", "close", "volume", "timestamp", "date"}
+    indicator_columns = [
+        col
+        for col in df.columns
+        if col.lower() not in base_columns and not col.lower().startswith("cdl")
+    ]
+
     if not indicator_columns:
         return pd.DataFrame()
-    
+
     summary_data = []
     latest_row = df.iloc[-1] if len(df) > 0 else None
-    
+
     if latest_row is not None:
         for col in indicator_columns:
             if not pd.isna(latest_row[col]):
-                summary_data.append({
-                    'Indicator': col,
-                    'Latest_Value': latest_row[col],
-                    'Data_Type': type(latest_row[col]).__name__
-                })
-    
+                summary_data.append(
+                    {
+                        "Indicator": col,
+                        "Latest_Value": latest_row[col],
+                        "Data_Type": type(latest_row[col]).__name__,
+                    }
+                )
+
     return pd.DataFrame(summary_data)
 
 
 # === ENHANCED SIGNAL GENERATION FUNCTIONS ===
 
-def generate_multi_indicator_signals(df: pd.DataFrame, 
-                                   signal_config: Optional[Dict[str, Any]] = None) -> pd.Series:
+
+def generate_multi_indicator_signals(
+    df: pd.DataFrame, signal_config: Optional[Dict[str, Any]] = None
+) -> pd.Series:
     """
     Generate trading signals using multiple technical indicators.
-    
+
     Args:
         df (pd.DataFrame): DataFrame with calculated indicators
         signal_config (Dict): Configuration for signal generation
-    
+
     Returns:
         pd.Series: Trading signals (1=buy, -1=sell, 0=hold)
     """
     signals = pd.Series(index=df.index, data=0)
-    
+
     if signal_config is None:
         signal_config = {
-            'rsi_overbought': 70,
-            'rsi_oversold': 30,
-            'use_macd': True,
-            'use_bollinger': True,
-            'use_volume': False
+            "rsi_overbought": 70,
+            "rsi_oversold": 30,
+            "use_macd": True,
+            "use_bollinger": True,
+            "use_volume": False,
         }
-    
+
     # RSI signals
-    if 'rsi' in df.columns:
-        rsi_oversold = signal_config.get('rsi_oversold', 30)
-        rsi_overbought = signal_config.get('rsi_overbought', 70)
-        
-        buy_rsi = df['rsi'] < rsi_oversold
-        sell_rsi = df['rsi'] > rsi_overbought
-        
+    if "rsi" in df.columns:
+        rsi_oversold = signal_config.get("rsi_oversold", 30)
+        rsi_overbought = signal_config.get("rsi_overbought", 70)
+
+        buy_rsi = df["rsi"] < rsi_oversold
+        sell_rsi = df["rsi"] > rsi_overbought
+
         signals[buy_rsi] += 1
         signals[sell_rsi] -= 1
-    
+
     # MACD signals
-    if signal_config.get('use_macd', True) and 'macd' in df.columns and 'macdsignal' in df.columns:
-        macd_bullish = crossover(df, 'macd', 'macdsignal')
-        macd_bearish = crossunder(df, 'macd', 'macdsignal')
-        
+    if signal_config.get("use_macd", True) and "macd" in df.columns and "macdsignal" in df.columns:
+        macd_bullish = crossover(df, "macd", "macdsignal")
+        macd_bearish = crossunder(df, "macd", "macdsignal")
+
         signals[macd_bullish] += 1
         signals[macd_bearish] -= 1
-    
+
     # Bollinger Bands signals
-    if signal_config.get('use_bollinger', True) and 'bb_lower_20' in df.columns and 'bb_upper_20' in df.columns:
-        bb_oversold = df['close'] <= df['bb_lower_20']
-        bb_overbought = df['close'] >= df['bb_upper_20']
-        
+    if (
+        signal_config.get("use_bollinger", True)
+        and "bb_lower_20" in df.columns
+        and "bb_upper_20" in df.columns
+    ):
+        bb_oversold = df["close"] <= df["bb_lower_20"]
+        bb_overbought = df["close"] >= df["bb_upper_20"]
+
         signals[bb_oversold] += 1
         signals[bb_overbought] -= 1
-    
+
     # Volume confirmation
-    if signal_config.get('use_volume', False) and 'volume_ratio' in df.columns:
-        high_volume = df['volume_ratio'] > 1.5
+    if signal_config.get("use_volume", False) and "volume_ratio" in df.columns:
+        high_volume = df["volume_ratio"] > 1.5
         signals = signals * high_volume.astype(int)
-    
+
     # Normalize signals to -1, 0, 1
     signals = np.clip(signals, -1, 1)
-    
+
     return signals
 
 
