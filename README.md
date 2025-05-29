@@ -48,9 +48,8 @@ The system is composed of several key components that work together in a cycle:
 
 1.  **Clone the repository:**
     ```bash
-    git clone <your_repository_url_here> quantevolve
+    git clone https://github.com/jhyang0/quantevolve.git
     ```
-    (Replace `<your_repository_url_here>` with the actual URL of this repository, or assume it's already cloned if running these commands locally.)
 
 2.  **Navigate to the directory:**
     ```bash
