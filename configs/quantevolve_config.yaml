@@ -1,0 +1,104 @@
+# Configuration for QuantEvolve Trading Strategy Task
+# Task: Evolve a Python trading strategy to maximize risk-adjusted returns.
+
+max_iterations: 200  # Number of evolution iterations
+log_level: INFO
+target_score: combined_score # Primary metric to optimize (from quant_evaluator.py)
+checkpoint_interval: 10 # Save checkpoint every N iterations
+
+# LLM Configuration
+llm:
+  # Primary model (used most frequently)
+  primary_model: "gemini-2.0-flash"
+  primary_model_weight: 0.8           # Sampling weight for primary model
+
+  # Secondary model (used for occasional high-quality generations)
+  secondary_model: "gemini-2.0-flash"
+  secondary_model_weight: 0.2         # Sampling weight for secondary model
+
+  # API configuration
+  # api_base: "https://generativelanguage.googleapis.com/v1beta/" # For Gemini, this is usually not needed as SDK handles it.
+  api_key: ""                       # API key (defaults to GOOGLE_API_KEY env variable)
+
+  # Generation parameters
+  temperature: 0.7                    # Temperature for generation (higher = more creative)
+  top_p: 0.95                         # Top-p sampling parameter
+  max_tokens: 4096                    # Maximum tokens to generate
+
+  # Request parameters
+  timeout: 60                         # Timeout for API requests in seconds
+  retries: 3                          # Number of retries for failed requests
+  retry_delay: 5
+
+
+# Prompt Engineering
+prompt:
+  system_message: |
+    You are an advanced AI assistant for QuantEvolve, an Evolutionary Quantitative Trading Strategy Development System.
+    Your primary role is to leverage evolutionary algorithms and Large Language Models to automatically develop and optimize quantitative trading strategies.
+    
+    Your task is to evolve a Python trading strategy function `run_strategy(market_data_df, params)` through intelligent code generation and modification.
+    The goal is to continuously improve strategies to achieve optimal risk-adjusted returns when backtested on historical market data.
+
+    The `run_strategy` function signature is:
+    `def run_strategy(market_data_df: pd.DataFrame, params: list) -> pd.Series:`
+
+    - `market_data_df`: A Pandas DataFrame indexed by `timestamp`, with columns `['open', 'high', 'low', 'close', 'volume']`.
+    - `params`: A list of numerical parameters that your strategy can use. You can evolve how these parameters are interpreted or develop parameter-less strategies if they perform better.
+    - The function must return a Pandas Series of the same length as `market_data_df`, containing trading signals:
+        - `1`: Buy signal
+        - `-1`: Sell signal
+        - `0`: Hold signal
+
+    You should evolve the logic within the `# EVOLVE-BLOCK-START` and `# EVOLVE-BLOCK-END` comments.
+
+    Key objectives for strategy evolution:
+    - **Risk-Adjusted Returns:** Prioritize high Sharpe Ratio. Balance PnL with appropriate risk management.
+    - **Novel Approaches:** Discover innovative and effective trading strategies through iterative refinement.
+    - **Robustness:** Ensure strategies perform consistently across historical data without overfitting.
+    - **Adaptability:** Develop strategies that can potentially adapt to changing market conditions.
+    - **Code Quality:** Generate clear, efficient, and maintainable Python code.
+    
+    Evolutionary considerations:
+    - **Learn from History:** Analyze the performance of previous strategies to guide improvements.
+    - **Intelligent Mutations:** Make thoughtful modifications based on performance feedback and market insights.
+    - **Diversity:** Explore various trading approaches (technical indicators, statistical methods, pattern recognition).
+    - **Avoid Lookahead Bias:** Ensure strategies only use information available up to the current data point.
+    
+    Available libraries: `numpy`, `pandas`. Avoid complex external dependencies.
+    
+    Remember: You are part of an evolutionary system. Each strategy you generate contributes to a pool of "genetic material" that drives the discovery of superior trading approaches. Focus on continuous improvement and innovation.
+  num_top_programs: 3 # Number of top-performing programs to include in the prompt for inspiration
+  use_template_stochasticity: true
+
+# Program Database Configuration
+database:
+  population_size: 50 # Number of programs in the population
+  archive_size: 20    # Number of elite programs in the archive
+  num_islands: 5      # Number of islands for population diversity
+  elite_selection_ratio: 0.2 # Proportion of elites to select from archive
+  exploitation_ratio: 0.7    # Probability of selecting parent from archive (exploitation vs exploration)
+
+# Evaluator Configuration (for quant_evaluator.py)
+evaluator:
+  timeout: 180 # Timeout in seconds for a single strategy evaluation
+  cascade_evaluation: false # Not using multi-stage evaluation for now
+  # cascade_thresholds: [0.5, 1.0] # Only if cascade_evaluation is true
+  parallel_evaluations: 4 # Number of evaluations to run in parallel (adjust based on CPU cores)
+  use_llm_feedback: false # Not using LLM for code quality feedback for now
+  # llm_feedback_weight: 0.1 # Only if use_llm_feedback is true
+
+# Evolution Strategy
+diff_based_evolution: true # Prefer generating diffs over full rewrites
+allow_full_rewrites: false # Allow full rewrites if diffs fail or are not suitable
+max_code_length: 20000 # Maximum length of the generated code in characters
+
+# Data Collection Configuration
+data_collection:
+  # Binance API configuration
+  binance_api_key: "" # Your Binance API key
+  binance_api_secret: "" # Your Binance API secret
+  # Default parameters for market data collection
+  default_symbol: "BTCUSDT"
+  default_interval: "1h" # 1h, 4h, 1d, etc.
+  default_lookback_days: 365 # Number of days to look back for historical data
