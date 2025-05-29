@@ -24,6 +24,6 @@ jobs:
 
     - name: Run unit tests
       env:
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
       run: |
         python -m unittest discover -s tests -p "test_*.py" -v
