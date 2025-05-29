@@ -9,38 +9,40 @@ import os
 import sys
 from typing import Dict, List, Optional
 
-from quantevolve.controller import QuantEvolveController # Changed import
-from quantevolve.config import Config, load_config # Changed import
+from quantevolve.controller import QuantEvolveController  # Changed import
+from quantevolve.config import Config, load_config  # Changed import
 
 logger = logging.getLogger(__name__)
 
 
 def parse_args() -> argparse.Namespace:
     """Parse command-line arguments"""
-    parser = argparse.ArgumentParser(description="QuantEvolve - Evolutionary Quantitative Trading Strategy Development")
+    parser = argparse.ArgumentParser(
+        description="QuantEvolve - Evolutionary Quantitative Trading Strategy Development"
+    )
 
     # Arguments that override QuantEvolveController defaults
     parser.add_argument(
         "--initial_strategy",
         help="Path to the initial strategy file (overrides default: quantevolve/strategy/initial_strategy.py)",
-        default=None 
+        default=None,
     )
     parser.add_argument(
         "--evaluator_file",
         help="Path to the evaluator file (overrides default: quantevolve/evaluation/quant_evaluator.py)",
-        default=None
+        default=None,
     )
     parser.add_argument(
-        "--config", 
-        "-c", 
-        help="Path to configuration file (YAML) (overrides default: configs/quantevolve_config.yaml or configs/quantevolve_default_config.yaml)", 
-        default=None
+        "--config",
+        "-c",
+        help="Path to configuration file (YAML) (overrides default: configs/quantevolve_config.yaml or configs/quantevolve_default_config.yaml)",
+        default=None,
     )
     parser.add_argument(
-        "--output", 
-        "-o", 
-        help="Output directory for results (overrides default: quantevolve_output/)", 
-        default=None
+        "--output",
+        "-o",
+        help="Output directory for results (overrides default: quantevolve_output/)",
+        default=None,
     )
 
     # General arguments
@@ -86,7 +88,7 @@ async def main_async() -> int:
 
     # Create config object first, as QuantEvolveController needs it.
     # Command-line LLM args override config file.
-    loaded_config = load_config(args.config) # args.config can be None, load_config handles it
+    loaded_config = load_config(args.config)  # args.config can be None, load_config handles it
 
     if args.api_base:
         loaded_config.llm.api_base = args.api_base
@@ -97,7 +99,7 @@ async def main_async() -> int:
     if args.secondary_model:
         loaded_config.llm.secondary_model = args.secondary_model
         logger.info(f"Overriding secondary LLM model from CLI: {loaded_config.llm.secondary_model}")
-    
+
     # The controller will use its defaults if args are None
     initial_strategy_path = args.initial_strategy
     evaluator_path = args.evaluator_file
@@ -117,9 +119,9 @@ async def main_async() -> int:
         # Pass loaded_config as the 'config' object.
         # config_path is effectively handled by load_config already, so not strictly needed by controller if config object is passed.
         controller = QuantEvolveController(
-            initial_program_path=initial_strategy_path, # Name in controller is initial_program_path
+            initial_program_path=initial_strategy_path,  # Name in controller is initial_program_path
             evaluation_file=evaluator_path,
-            config=loaded_config, # Pass the potentially modified config object
+            config=loaded_config,  # Pass the potentially modified config object
             output_dir=output_path,
         )
 
@@ -138,7 +140,6 @@ async def main_async() -> int:
         if args.log_level:
             logging.getLogger().setLevel(getattr(logging, args.log_level))
             logger.info(f"Log level set to {args.log_level} from CLI.")
-
 
         # Run evolution
         best_strategy = await controller.run(
@@ -168,19 +169,22 @@ async def main_async() -> int:
         print(f"Best strategy ({best_strategy.id}) metrics:")
         for name, value in best_strategy.metrics.items():
             print(f"  {name}: {value:.4f}")
-        
-        best_strategy_path = os.path.join(controller.output_dir, "best", f"best_strategy{controller.file_extension}")
+
+        best_strategy_path = os.path.join(
+            controller.output_dir, "best", f"best_strategy{controller.file_extension}"
+        )
         print(f"Best strategy saved to: {best_strategy_path}")
 
         if latest_checkpoint:
             print(f"\nLatest checkpoint saved at: {latest_checkpoint}")
             print(f"To resume, use: --checkpoint {latest_checkpoint}")
-        
+
         return 0
 
     except Exception as e:
         logger.error(f"An error occurred during QuantEvolve execution: {str(e)}")
         import traceback
+
         traceback.print_exc()
         return 1
 

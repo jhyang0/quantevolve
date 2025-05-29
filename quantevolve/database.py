@@ -250,8 +250,13 @@ class ProgramDatabase:
         if metric:
             # Sort by specific metric - ensure the metric is numeric
             sorted_programs = sorted(
-                [p for p in self.programs.values() if metric in p.metrics 
-                 and isinstance(p.metrics[metric], (int, float)) and not isinstance(p.metrics[metric], bool)],
+                [
+                    p
+                    for p in self.programs.values()
+                    if metric in p.metrics
+                    and isinstance(p.metrics[metric], (int, float))
+                    and not isinstance(p.metrics[metric], bool)
+                ],
                 key=lambda p: p.metrics[metric],
                 reverse=True,
             )
@@ -259,13 +264,16 @@ class ProgramDatabase:
             # Sort by average of all numeric metrics
             def safe_avg_metric(p):
                 # Filter out non-numeric values before summing
-                numeric_metrics = [v for v in p.metrics.values() 
-                                 if isinstance(v, (int, float)) and not isinstance(v, bool)]
-                
+                numeric_metrics = [
+                    v
+                    for v in p.metrics.values()
+                    if isinstance(v, (int, float)) and not isinstance(v, bool)
+                ]
+
                 if not numeric_metrics:
                     return 0.0  # Default value if no numeric metrics
                 return sum(numeric_metrics) / len(numeric_metrics)
-                
+
             sorted_programs = sorted(
                 self.programs.values(),
                 key=safe_avg_metric,
@@ -411,9 +419,12 @@ class ProgramDatabase:
                     bin_idx = 0
                 else:
                     # Filter out non-numeric values before summing
-                    numeric_metrics = [v for v in program.metrics.values() 
-                                      if isinstance(v, (int, float)) and not isinstance(v, bool)]
-                    
+                    numeric_metrics = [
+                        v
+                        for v in program.metrics.values()
+                        if isinstance(v, (int, float)) and not isinstance(v, bool)
+                    ]
+
                     if not numeric_metrics:
                         bin_idx = 0
                     else:
@@ -476,16 +487,19 @@ class ProgramDatabase:
         # Fallback to average of all numeric metrics
         def safe_avg_metrics(metrics):
             # Filter out non-numeric values before summing
-            numeric_values = [v for v in metrics.values() 
-                            if isinstance(v, (int, float)) and not isinstance(v, bool)]
-            
+            numeric_values = [
+                v
+                for v in metrics.values()
+                if isinstance(v, (int, float)) and not isinstance(v, bool)
+            ]
+
             if not numeric_values:
                 return 0.0  # Default value if no numeric metrics
             return sum(numeric_values) / len(numeric_values)
-        
+
         avg1 = safe_avg_metrics(program1.metrics)
         avg2 = safe_avg_metrics(program2.metrics)
-        
+
         return avg1 > avg2
 
     def _update_archive(self, program: Program) -> None:

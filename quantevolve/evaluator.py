@@ -114,7 +114,7 @@ class Evaluator:
 
             elapsed = time.time() - start_time
             program_id_str = f" {program_id}" if program_id else ""
-            
+
             # Format metrics safely, handling both numeric and string values
             metric_strings = []
             for name, value in metrics.items():
@@ -122,7 +122,7 @@ class Evaluator:
                     metric_strings.append(f"{name}={value:.4f}")
                 else:
                     metric_strings.append(f"{name}={value}")
-                    
+
             logger.info(
                 f"Evaluated program{program_id_str} in {elapsed:.2f}s: {', '.join(metric_strings)}"
             )

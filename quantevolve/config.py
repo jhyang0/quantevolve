@@ -116,8 +116,8 @@ class DataCollectionConfig:
 
     # Default parameters for market data collection
     default_symbol: str = "BTCUSDT"
-    default_interval: str = "1h" # 1h, 4h, 1d, etc.
-    default_lookback_days: int = 365 # Number of days to look back for historical data
+    default_interval: str = "1h"  # 1h, 4h, 1d, etc.
+    default_lookback_days: int = 365  # Number of days to look back for historical data
 
 
 @dataclass
@@ -158,7 +158,9 @@ class Config:
 
         # Update top-level fields
         for key, value in config_dict.items():
-            if key not in ["llm", "prompt", "database", "evaluator", "data_collection"] and hasattr(config, key):
+            if key not in ["llm", "prompt", "database", "evaluator", "data_collection"] and hasattr(
+                config, key
+            ):
                 setattr(config, key, value)
 
         # Update nested configs
@@ -284,19 +286,19 @@ def load_config(config_path: Optional[Union[str, Path]] = None) -> Config:
     default_quantevolve_path = Path("configs/quantevolve_config.yaml")
     if default_quantevolve_path.exists():
         return Config.from_yaml(default_quantevolve_path)
-        
+
     # Try QuantEvolve generic default
     default_quantevolve_path = Path("configs/quantevolve_default_config.yaml")
     if default_quantevolve_path.exists():
         return Config.from_yaml(default_quantevolve_path)
 
     # Fallback: Use environment variables if available for a base Config
-    config = Config() # Initialize config first to access its defaults if needed
+    config = Config()  # Initialize config first to access its defaults if needed
 
     # Determine api_base: environment variable, then config default
     # The config object (config.llm.api_base) already has a default Google API base URL
     # If GOOGLE_API_BASE is set, it overrides the default from Config's LLMConfig.
-    api_base_env = os.environ.get("GOOGLE_API_BASE") 
+    api_base_env = os.environ.get("GOOGLE_API_BASE")
     # If api_base_env is None, config.llm.api_base (default) will be used by the LLM client if not overridden by a loaded YAML.
     # If a YAML is loaded, its api_base takes precedence.
     # For the purpose of choosing API key, we need to know the effective api_base.
@@ -305,7 +307,9 @@ def load_config(config_path: Optional[Union[str, Path]] = None) -> Config:
     # If a config file IS found, its values will be used later.
 
     # For the fallback case (no config file found and loading from env vars):
-    effective_api_base = api_base_env or config.llm.api_base # Default from LLMConfig if env not set
+    effective_api_base = (
+        api_base_env or config.llm.api_base
+    )  # Default from LLMConfig if env not set
 
     api_key = None
     # Always prioritize GOOGLE_API_KEY
@@ -313,12 +317,14 @@ def load_config(config_path: Optional[Union[str, Path]] = None) -> Config:
     if api_key:
         logger.info("Using GOOGLE_API_KEY from environment for Gemini.")
     else:
-        logger.warning("GOOGLE_API_KEY not found in environment variables. Please set it for Gemini to work.")
+        logger.warning(
+            "GOOGLE_API_KEY not found in environment variables. Please set it for Gemini to work."
+        )
 
     # Apply to the config object that will be returned if no YAML was loaded
     if api_key:
         config.llm.api_key = api_key
-    if api_base_env: # Only override if env var was explicitly set
+    if api_base_env:  # Only override if env var was explicitly set
         config.llm.api_base = api_base_env
 
     return config

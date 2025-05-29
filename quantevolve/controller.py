@@ -46,7 +46,7 @@ class QuantEvolveController:
         self,
         initial_program_path: str = "quantevolve/strategy/initial_strategy.py",
         evaluation_file: str = "quantevolve/evaluation/quant_evaluator.py",
-        config_path: Optional[str] = None, # Default handled by load_config
+        config_path: Optional[str] = None,  # Default handled by load_config
         config: Optional[Config] = None,
         output_dir: Optional[str] = "quantevolve_output",
     ):
@@ -56,25 +56,33 @@ class QuantEvolveController:
             self.config = config
         else:
             # Load from file or use defaults
-            self.config = load_config(config_path) # config_path default will be handled here
+            self.config = load_config(config_path)  # config_path default will be handled here
 
         # Set up output directory
         # The output_dir argument now has a default in the signature.
         # If None is explicitly passed, it will use the default from the signature.
         # If a value is passed, it will use that value.
-        self.output_dir = output_dir if output_dir is not None else "quantevolve_output" 
+        self.output_dir = output_dir if output_dir is not None else "quantevolve_output"
         os.makedirs(self.output_dir, exist_ok=True)
 
         # Set up logging
         self._setup_logging()
 
         # Load initial program
-        self.initial_program_path = initial_program_path if initial_program_path is not None else "quantevolve/strategy/initial_strategy.py"
+        self.initial_program_path = (
+            initial_program_path
+            if initial_program_path is not None
+            else "quantevolve/strategy/initial_strategy.py"
+        )
         self.initial_program_code = self._load_initial_program()
         self.language = extract_code_language(self.initial_program_code)
 
         # Handle evaluation_file default
-        self.evaluation_file = evaluation_file if evaluation_file is not None else "quantevolve/evaluation/quant_evaluator.py"
+        self.evaluation_file = (
+            evaluation_file
+            if evaluation_file is not None
+            else "quantevolve/evaluation/quant_evaluator.py"
+        )
 
         # Extract file extension from initial program
         self.file_extension = os.path.splitext(self.initial_program_path)[1]
@@ -92,7 +100,10 @@ class QuantEvolveController:
         self.database = ProgramDatabase(self.config.database)
         self.evaluator = Evaluator(self.config.evaluator, self.evaluation_file, self.llm_ensemble)
 
-        logger.info(f"Initialized QuantEvolveController with {initial_program_path} " f"and {self.evaluation_file}")
+        logger.info(
+            f"Initialized QuantEvolveController with {initial_program_path} "
+            f"and {self.evaluation_file}"
+        )
 
     def _setup_logging(self) -> None:
         """Set up logging"""
@@ -155,19 +166,21 @@ class QuantEvolveController:
 
         if should_add_initial:
             logger.info("Adding initial strategy to database")
-            initial_program_id = str(uuid.uuid4()) # Keep 'program' for internal ID consistency
+            initial_program_id = str(uuid.uuid4())  # Keep 'program' for internal ID consistency
 
             # Evaluate the initial strategy
             initial_metrics = await self.evaluator.evaluate_program(
                 self.initial_program_code, initial_program_id
             )
 
-            initial_strategy_program = Program( # Keep Program class, but variable name can be more specific
-                id=initial_program_id,
-                code=self.initial_program_code,
-                language=self.language,
-                metrics=initial_metrics,
-                iteration_found=start_iteration,
+            initial_strategy_program = (
+                Program(  # Keep Program class, but variable name can be more specific
+                    id=initial_program_id,
+                    code=self.initial_program_code,
+                    language=self.language,
+                    metrics=initial_metrics,
+                    iteration_found=start_iteration,
+                )
             )
 
             self.database.add(initial_strategy_program)
@@ -212,7 +225,7 @@ class QuantEvolveController:
                 if self.config.diff_based_evolution:
                     # First try to extract diff blocks
                     diff_blocks = extract_diffs(llm_response)
-                    
+
                     if diff_blocks:
                         # Apply the diffs if found
                         child_code = apply_diff(parent.code, llm_response)
@@ -220,35 +233,45 @@ class QuantEvolveController:
                     else:
                         # If no diff blocks found, try to extract evolve blocks and apply changes
                         evolve_blocks = parse_evolve_blocks(parent.code)
-                        
+
                         if evolve_blocks and self.config.allow_full_rewrites:
                             # Extract full code from LLM response
                             new_code = parse_full_rewrite(llm_response, self.language)
-                            
+
                             if new_code:
                                 # Apply changes only to evolve blocks
-                                parent_lines = parent.code.split('\n')
-                                new_code_lines = new_code.split('\n')
-                                
+                                parent_lines = parent.code.split("\n")
+                                new_code_lines = new_code.split("\n")
+
                                 # Create a modified version of the code
                                 child_code = parent.code
-                                
+
                                 # Look for code blocks in LLM response
                                 for start_line, end_line, block_content in evolve_blocks:
                                     # Try to find corresponding code in LLM response
-                                    if len(new_code_lines) > 10:  # Ensure there's enough code to work with
+                                    if (
+                                        len(new_code_lines) > 10
+                                    ):  # Ensure there's enough code to work with
                                         # Replace the evolve block with new code
                                         child_code = child_code.replace(
-                                            "# EVOLVE-BLOCK-START\n{}\n".format(block_content), 
-                                            "# EVOLVE-BLOCK-START\n{}\n".format(new_code)
+                                            "# EVOLVE-BLOCK-START\n{}\n".format(block_content),
+                                            "# EVOLVE-BLOCK-START\n{}\n".format(new_code),
                                         )
-                                
+
                                 changes_summary = "Updated EVOLVE-BLOCK sections"
                             else:
-                                logger.warning("Iteration {}: No valid code found in response for evolve blocks".format(i+1))
+                                logger.warning(
+                                    "Iteration {}: No valid code found in response for evolve blocks".format(
+                                        i + 1
+                                    )
+                                )
                                 continue
                         else:
-                            logger.warning("Iteration {}: No valid diffs found in response and no evolve blocks to update".format(i+1))
+                            logger.warning(
+                                "Iteration {}: No valid diffs found in response and no evolve blocks to update".format(
+                                    i + 1
+                                )
+                            )
                             continue
                 else:
                     # Parse full rewrite
@@ -297,12 +320,17 @@ class QuantEvolveController:
                 # Specifically check if this is the new best program
                 if self.database.best_program_id == child_program.id:
                     logger.info(
-                        "*** New best strategy found at iteration {}: {}".format(i+1, child_program.id)
+                        "*** New best strategy found at iteration {}: {}".format(
+                            i + 1, child_program.id
+                        )
                     )
-                    metrics_str = ", ".join(["{0}={1:.4f}".format(name, value) for name, value in child_program.metrics.items()])
-                    logger.info(
-                        "Metrics for new best strategy: {}".format(metrics_str)
+                    metrics_str = ", ".join(
+                        [
+                            "{0}={1:.4f}".format(name, value)
+                            for name, value in child_program.metrics.items()
+                        ]
                     )
+                    logger.info("Metrics for new best strategy: {}".format(metrics_str))
 
                 # Save checkpoint
                 if (i + 1) % self.config.checkpoint_interval == 0:
@@ -320,18 +348,20 @@ class QuantEvolveController:
                 continue
 
         # Get the best program using our tracking mechanism
-        best_strategy = None # Renamed variable
-        if self.database.best_program_id: # Internal database ID still 'program'
+        best_strategy = None  # Renamed variable
+        if self.database.best_program_id:  # Internal database ID still 'program'
             best_strategy = self.database.get(self.database.best_program_id)
             logger.info(f"Using tracked best strategy: {self.database.best_program_id}")
 
         # Fallback to calculating best strategy if tracked strategy not found
         if best_strategy is None:
-            best_strategy = self.database.get_best_program() # Method name in database class
+            best_strategy = self.database.get_best_program()  # Method name in database class
             logger.info("Using calculated best strategy (tracked strategy not found)")
 
         # Check if there's a better strategy by combined_score that wasn't tracked
-        if best_strategy and "combined_score" in best_strategy.metrics: # Check if best_strategy is not None
+        if (
+            best_strategy and "combined_score" in best_strategy.metrics
+        ):  # Check if best_strategy is not None
             best_by_combined = self.database.get_best_program(metric="combined_score")
             if (
                 best_by_combined
@@ -350,9 +380,8 @@ class QuantEvolveController:
                         f"Score difference for strategy {best_strategy.id} ({best_strategy.metrics['combined_score']:.4f}) vs {best_by_combined.id} ({best_by_combined.metrics['combined_score']:.4f})"
                     )
                     best_strategy = best_by_combined
-        elif not best_strategy: # Handle case where no strategy was found at all
-             logger.warning("No best strategy could be determined.")
-
+        elif not best_strategy:  # Handle case where no strategy was found at all
+            logger.warning("No best strategy could be determined.")
 
         if best_strategy:
             logger.info(
@@ -361,7 +390,7 @@ class QuantEvolveController:
             )
 
             # Save the best strategy (using our tracked best strategy)
-            self._save_best_program(best_strategy) # Pass the strategy to save
+            self._save_best_program(best_strategy)  # Pass the strategy to save
 
             return best_strategy
         else:
@@ -385,6 +414,7 @@ class QuantEvolveController:
             child: Child program
             elapsed_time: Elapsed time in seconds
         """
+
         def _safe_float(val):
             try:
                 return float(val)
@@ -432,15 +462,19 @@ class QuantEvolveController:
         self.database.save(checkpoint_path, iteration)
 
         # Save the best strategy found so far
-        best_strategy_at_checkpoint = None # Renamed variable
-        if self.database.best_program_id: # Internal database ID still 'program'
+        best_strategy_at_checkpoint = None  # Renamed variable
+        if self.database.best_program_id:  # Internal database ID still 'program'
             best_strategy_at_checkpoint = self.database.get(self.database.best_program_id)
         else:
-            best_strategy_at_checkpoint = self.database.get_best_program() # Method name in database class
+            best_strategy_at_checkpoint = (
+                self.database.get_best_program()
+            )  # Method name in database class
 
         if best_strategy_at_checkpoint:
             # Save the best strategy at this checkpoint
-            best_strategy_path = os.path.join(checkpoint_path, f"best_strategy{self.file_extension}")
+            best_strategy_path = os.path.join(
+                checkpoint_path, f"best_strategy{self.file_extension}"
+            )
             with open(best_strategy_path, "w") as f:
                 f.write(best_strategy_at_checkpoint.code)
 
@@ -471,7 +505,9 @@ class QuantEvolveController:
 
         logger.info(f"Saved checkpoint at iteration {iteration} to {checkpoint_path}")
 
-    def _save_best_program(self, strategy_to_save: Optional[Program] = None) -> None: # Parameter renamed for clarity
+    def _save_best_program(
+        self, strategy_to_save: Optional[Program] = None
+    ) -> None:  # Parameter renamed for clarity
         """
         Save the best strategy
 
@@ -480,11 +516,11 @@ class QuantEvolveController:
         """
         # If no strategy is provided, use the tracked best strategy from the database
         if strategy_to_save is None:
-            if self.database.best_program_id: # Internal database ID still 'program'
+            if self.database.best_program_id:  # Internal database ID still 'program'
                 strategy_to_save = self.database.get(self.database.best_program_id)
             else:
                 # Fallback to calculating best strategy if no tracked best strategy
-                strategy_to_save = self.database.get_best_program() # Method name in database class
+                strategy_to_save = self.database.get_best_program()  # Method name in database class
 
         if not strategy_to_save:
             logger.warning("No best strategy found to save")
@@ -520,4 +556,6 @@ class QuantEvolveController:
                 indent=2,
             )
 
-        logger.info(f"Saved best strategy ({strategy_to_save.id}) to {code_path} with strategy info to {info_path}")
+        logger.info(
+            f"Saved best strategy ({strategy_to_save.id}) to {code_path} with strategy info to {info_path}"
+        )

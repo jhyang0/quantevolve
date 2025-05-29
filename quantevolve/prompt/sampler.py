@@ -140,7 +140,7 @@ class PromptSampler:
                 formatted_metrics.append(f"{name}: {float(value):.4f}")
             except (ValueError, TypeError):
                 formatted_metrics.append(f"{name}: {str(value)}")
-                
+
         return ", ".join(formatted_metrics)
 
     def _identify_improvement_areas(
@@ -294,12 +294,21 @@ class PromptSampler:
                         count += weight
                     except (ValueError, TypeError):
                         continue
-                
+
                 score = score / max(1, count)
             except Exception:
                 # Fallback to simple average
-                score = sum([float(v) if isinstance(v, (int, float)) or (isinstance(v, str) and v.replace('.', '', 1).isdigit()) 
-                             else 0 for v in metrics_dict.values()]) / max(1, len(metrics_dict))
+                score = sum(
+                    [
+                        (
+                            float(v)
+                            if isinstance(v, (int, float))
+                            or (isinstance(v, str) and v.replace(".", "", 1).isdigit())
+                            else 0
+                        )
+                        for v in metrics_dict.values()
+                    ]
+                ) / max(1, len(metrics_dict))
 
             # Extract key features of successful trading strategies
             key_features = program.get("key_features", [])
@@ -310,7 +319,7 @@ class PromptSampler:
                         key_features.append(f"Performs well on {name} ({float(value):.4f})")
                     except (ValueError, TypeError):
                         key_features.append(f"Performs well on {name} ({str(value)})")
-                
+
                 # If no metrics were found, add a generic message
                 if not key_features:
                     key_features = ["Notable trading strategy"]

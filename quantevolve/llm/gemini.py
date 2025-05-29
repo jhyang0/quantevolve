@@ -16,6 +16,7 @@ from quantevolve.config import LLMConfig
 
 logger = logging.getLogger(__name__)
 
+
 class GeminiLLM(LLMInterface):
     """LLM interface using Google Gemini APIs"""
 
@@ -29,10 +30,12 @@ class GeminiLLM(LLMInterface):
         self.api_key = config.api_key or os.getenv("GOOGLE_API_KEY")
 
         if not self.api_key:
-            raise ValueError("Gemini API key not found. Set GOOGLE_API_KEY environment variable or api_key in config.")
+            raise ValueError(
+                "Gemini API key not found. Set GOOGLE_API_KEY environment variable or api_key in config."
+            )
 
         genai.configure(api_key=self.api_key)
-        
+
         # Default safety settings - can be made configurable if needed
         self.safety_settings = {
             HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
@@ -42,8 +45,7 @@ class GeminiLLM(LLMInterface):
         }
 
         self.model = genai.GenerativeModel(
-            model_name=self.model_name,
-            safety_settings=self.safety_settings
+            model_name=self.model_name, safety_settings=self.safety_settings
         )
 
         logger.info(f"Initialized Gemini LLM with model: {self.model_name}")
@@ -53,7 +55,7 @@ class GeminiLLM(LLMInterface):
         # For Gemini, simple prompts are treated as a single user message.
         # System message can be part of the prompt or handled by generate_with_context.
         return await self.generate_with_context(
-            system_message=self.config.system_message, # Use default system message from config
+            system_message=self.config.system_message,  # Use default system message from config
             messages=[{"role": "user", "content": prompt}],
             **kwargs,
         )
@@ -62,7 +64,7 @@ class GeminiLLM(LLMInterface):
         self, system_message: str, messages: List[Dict[str, str]], **kwargs
     ) -> str:
         """Generate text using a system message and conversational context"""
-        
+
         generation_config = GenerationConfig(
             temperature=kwargs.get("temperature", self.config.temperature),
             top_p=kwargs.get("top_p", self.config.top_p),
@@ -93,25 +95,35 @@ class GeminiLLM(LLMInterface):
                     self.model.generate_content_async(
                         contents=gemini_messages,
                         generation_config=generation_config,
-                        safety_settings=self.safety_settings
+                        safety_settings=self.safety_settings,
                     ),
-                    timeout=timeout_seconds
+                    timeout=timeout_seconds,
                 )
                 # Ensure there's content and parts before accessing
-                if response.candidates and response.candidates[0].content and response.candidates[0].content.parts:
+                if (
+                    response.candidates
+                    and response.candidates[0].content
+                    and response.candidates[0].content.parts
+                ):
                     return response.candidates[0].content.parts[0].text
                 else:
                     # Handle cases where the response might be empty or blocked
-                    logger.warning(f"Gemini response was empty or blocked. Finish reason: {response.candidates[0].finish_reason if response.candidates else 'N/A'}")
+                    logger.warning(
+                        f"Gemini response was empty or blocked. Finish reason: {response.candidates[0].finish_reason if response.candidates else 'N/A'}"
+                    )
                     # You might want to return a specific string or raise an error here
                     # For now, returning empty string if blocked or no content
-                    if response.candidates and response.candidates[0].finish_reason != 1: # 1 is STOP
+                    if (
+                        response.candidates and response.candidates[0].finish_reason != 1
+                    ):  # 1 is STOP
                         return f"Content generation stopped due to: {response.candidates[0].finish_reason}"
-                    return "" # Or raise an error
+                    return ""  # Or raise an error
 
             except asyncio.TimeoutError:
                 if attempt < retries:
-                    logger.warning(f"Gemini API call timeout on attempt {attempt + 1}/{retries + 1}. Retrying in {retry_delay}s...")
+                    logger.warning(
+                        f"Gemini API call timeout on attempt {attempt + 1}/{retries + 1}. Retrying in {retry_delay}s..."
+                    )
                     await asyncio.sleep(retry_delay)
                 else:
                     logger.error(f"All {retries + 1} Gemini API call attempts failed with timeout.")
@@ -125,6 +137,8 @@ class GeminiLLM(LLMInterface):
                     )
                     await asyncio.sleep(retry_delay)
                 else:
-                    logger.error(f"All {retries + 1} Gemini API call attempts failed with error: {str(e)}")
+                    logger.error(
+                        f"All {retries + 1} Gemini API call attempts failed with error: {str(e)}"
+                    )
                     raise
-        return "" # Should not be reached if retries are exhausted and an exception is raised
+        return ""  # Should not be reached if retries are exhausted and an exception is raised

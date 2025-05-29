@@ -23,13 +23,13 @@ class LLMEnsemble:
         # Initialize primary and secondary models
         primary_model_name = config.primary_model
         secondary_model_name = config.secondary_model
-        
+
         # Always use GeminiLLM
         logger.info("LLMEnsemble: Using GeminiLLM for all models.")
         LLMClientClass = GeminiLLM
 
         self.primary_model = LLMClientClass(config, model=primary_model_name)
-        if secondary_model_name: # Ensure secondary_model is not None or empty
+        if secondary_model_name:  # Ensure secondary_model is not None or empty
             self.secondary_model = LLMClientClass(config, model=secondary_model_name)
             # Model weights for sampling
             self._weights = [
@@ -40,9 +40,9 @@ class LLMEnsemble:
             total = sum(self._weights)
             if total > 0:
                 self._weights = [w / total for w in self._weights]
-            else: # Avoid division by zero if weights are zero
-                self._weights = [0.5, 0.5] # Default to equal weighting
-            
+            else:  # Avoid division by zero if weights are zero
+                self._weights = [0.5, 0.5]  # Default to equal weighting
+
             logger.info(
                 f"Initialized LLM ensemble with models: "
                 f"{primary_model_name} (weight: {self._weights[0]:.2f}), "
@@ -50,7 +50,7 @@ class LLMEnsemble:
             )
         else:
             self.secondary_model = None
-            self._weights = [1.0] # Only primary model
+            self._weights = [1.0]  # Only primary model
             logger.info(
                 f"Initialized LLM ensemble with primary model: "
                 f"{primary_model_name} (weight: 1.00)"
@@ -89,14 +89,14 @@ class LLMEnsemble:
         models = [self.primary_model]
         if self.secondary_model:
             models.append(self.secondary_model)
-        
-        if not models: # Should not happen if constructor is correct
+
+        if not models:  # Should not happen if constructor is correct
             raise ValueError("No models available in LLMEnsemble.")
-        
+
         if len(models) == 1:
             return models[0]
-            
-        index = random.choices(range(len(models)), weights=self._weights[:len(models)], k=1)[0]
+
+        index = random.choices(range(len(models)), weights=self._weights[: len(models)], k=1)[0]
         return models[index]
 
     async def generate_multiple(self, prompt: str, n: int, **kwargs) -> List[str]:

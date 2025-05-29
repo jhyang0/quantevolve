@@ -33,7 +33,7 @@ def parse_evolve_blocks(code: str) -> List[Tuple[int, int, str]]:
             blocks.append((start_line, i, "\n".join(block_content)))
         elif in_block:
             block_content.append(line)
-    
+
     # If we found no EVOLVE-BLOCK markers but have code, create a synthetic block for the entire code
     # This helps with code that doesn't have explicit markers
     if not blocks and code.strip():
@@ -42,7 +42,7 @@ def parse_evolve_blocks(code: str) -> List[Tuple[int, int, str]]:
         if non_empty_lines:
             start_line = non_empty_lines[0]
             end_line = non_empty_lines[-1]
-            block_content = lines[start_line:end_line+1]
+            block_content = lines[start_line : end_line + 1]
             blocks.append((start_line, end_line, "\n".join(block_content)))
 
     return blocks
@@ -83,22 +83,27 @@ def apply_diff(original_code: str, diff_text: str) -> str:
                 result_lines[i : i + len(search_lines)] = replace_lines
                 found_match = True
                 break
-        
+
         # If exact match not found, try a more flexible match approach
         # This helps when LLM adds/removes whitespace or makes minor formatting changes
         if not found_match and len(search_lines) > 1:
             # Normalize whitespace and remove comments for comparison
-            normalized_search = '\n'.join([line.strip() for line in search_lines 
-                                          if not line.strip().startswith('#')])
-            
+            normalized_search = "\n".join(
+                [line.strip() for line in search_lines if not line.strip().startswith("#")]
+            )
+
             # Try to find a close match in original code
             for i in range(len(original_lines) - len(search_lines) + 1):
-                window = original_lines[i:i + len(search_lines)]
-                normalized_window = '\n'.join([line.strip() for line in window 
-                                             if not line.strip().startswith('#')])
-                
+                window = original_lines[i : i + len(search_lines)]
+                normalized_window = "\n".join(
+                    [line.strip() for line in window if not line.strip().startswith("#")]
+                )
+
                 # Calculate similarity using edit distance
-                if calculate_edit_distance(normalized_search, normalized_window) < len(normalized_search) * 0.2:
+                if (
+                    calculate_edit_distance(normalized_search, normalized_window)
+                    < len(normalized_search) * 0.2
+                ):
                     # Found a close match, replace it
                     result_lines[i : i + len(search_lines)] = replace_lines
                     found_match = True
@@ -162,7 +167,7 @@ def parse_full_rewrite(llm_response: str, language: str = "python") -> Optional[
     # Last resort: try to find any indented block of code (4+ spaces)
     indented_code_pattern = r"(?m)^    (.+)$"
     indented_lines = re.findall(indented_code_pattern, llm_response)
-    
+
     if indented_lines and len(indented_lines) > 5:  # Require at least 5 lines of code
         return "\n".join(indented_lines)
 
