@@ -25,7 +25,7 @@ pip install -e ".[dev]"
 We follow the [Black](https://black.readthedocs.io/) code style. Please format your code before submitting a pull request:
 
 ```bash
-black quantevolve tests examples
+black quantevolve tests
 ```
 
 ## Pull Request Process
@@ -38,11 +38,11 @@ black quantevolve tests examples
 6. Push to your fork: `git push origin feature/your-feature-name`
 7. Submit a pull request to the main repository
 
-## Adding Examples
+## Adding Strategies and Modules
 
-We encourage adding new examples to showcase QuantEvolve's capabilities, particularly in the domain of quantitative trading or other relevant financial applications. To add a new example:
+We encourage adding new strategies and modules to showcase QuantEvolve's capabilities, particularly in the domain of quantitative trading or other relevant financial applications. To add a new component:
 
-1. Create a new directory in the `examples` folder (if appropriate for a generic example, or consider if it fits within the `quantevolve` module structure for more integrated examples).
+1. Create appropriate modules within the `quantevolve` package structure (e.g., `quantevolve/strategy/` for new trading strategies or `quantevolve/indicators/` for new technical indicators).
 2. Include all necessary files (e.g., initial strategy script, evaluation logic, sample data or data collection scripts, configuration files).
 3. Add a `README.md` explaining the example, its purpose, and how to run it.
 4. Ensure the example can be run with minimal setup, ideally leveraging the main `quantevolve-run.py` script and project's configuration system.

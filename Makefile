@@ -33,7 +33,7 @@ install: venv
 # Run Black code formatting
 .PHONY: lint
 lint: venv
-	$(PYTHON) -m black quantevolve examples tests
+	$(PYTHON) -m black quantevolve tests
 
 # Run tests using the virtual environment
 .PHONY: test
@@ -48,4 +48,4 @@ docker-build:
 # Run the Docker container with the example
 .PHONY: docker-run
 docker-run:
-	docker run --rm -v $(PROJECT_DIR):/app $(DOCKER_IMAGE) examples/function_minimization/initial_program.py examples/function_minimization/evaluator.py --config examples/function_minimization/config.yaml --iterations 1000
+	docker run --rm -v $(PROJECT_DIR):/app $(DOCKER_IMAGE) quantevolve/strategy/initial_strategy.py quantevolve/evaluation/quant_evaluator.py --config configs/quantevolve_config.yaml --output_dir quantevolve_output

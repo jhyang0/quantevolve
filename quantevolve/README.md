@@ -57,29 +57,29 @@ Follow these steps to run the evolutionary trading strategy development process:
 
 Run the `market_data_collector.py` script to download historical market data. This example defaults to fetching 1-hour BTC/USDT data for the year 2023.
 ```bash
-python examples/quant_evolve/market_data_collector.py
+python -m quantevolve.data.market_data_collector
 ```
-This command will create a file, typically `examples/quant_evolve/data/btc_usdt_1h_2023.csv`.
+This command will create a file, typically `quantevolve/data/btc_usdt_1h_2023.csv` or in the configured data directory.
 
 ### Step 2: Run QuantEvolve
 
 Once the market data is available, start the QuantEvolve process using the following command:
 ```bash
-python quantevolve-run.py examples/quant_evolve/initial_strategy.py examples/quant_evolve/quant_evaluator.py --config examples/quant_evolve/config_quant_evolve.yaml --output_dir examples/quant_evolve/quantevolve_output
+python -m quantevolve.cli quantevolve/strategy/initial_strategy.py quantevolve/evaluation/quant_evaluator.py --config configs/quantevolve_config.yaml --output_dir quantevolve_output
 ```
 
 **Command Arguments Explained:**
 
--   `examples/quant_evolve/initial_strategy.py`: Path to the initial Python script containing the trading strategy to be evolved.
--   `examples/quant_evolve/quant_evaluator.py`: Path to the Python script that evaluates the performance of each evolved strategy.
--   `--config examples/quant_evolve/config_quant_evolve.yaml`: Path to the YAML configuration file for this task.
--   `--output_dir examples/quant_evolve/quantevolve_output`: Directory where QuantEvolve will save all its outputs, including logs, checkpoints, and the best-evolved strategy.
+-   `quantevolve/strategy/initial_strategy.py`: Path to the initial Python script containing the trading strategy to be evolved.
+-   `quantevolve/evaluation/quant_evaluator.py`: Path to the Python script that evaluates the performance of each evolved strategy.
+-   `--config configs/quantevolve_config.yaml`: Path to the YAML configuration file for this task.
+-   `--output_dir quantevolve_output`: Directory where QuantEvolve will save all its outputs, including logs, checkpoints, and the best-evolved strategy.
 
 You can adjust the `max_iterations` parameter in `config_quant_evolve.yaml` to control the duration of the evolution process.
 
 ## Expected Output and Results
 
-QuantEvolve will create the specified output directory (e.g., `examples/quant_evolve/quantevolve_output/`). Inside this directory, you will find:
+QuantEvolve will create the specified output directory (e.g., `quantevolve_output/`). Inside this directory, you will find:
 
 -   `logs/`: Contains detailed logs of the evolutionary process, including LLM interactions and evaluation results. This is useful for monitoring and debugging.
 -   `checkpoints/`: Stores periodic checkpoints of the evolution state. Each checkpoint includes the current population of strategies and the best program found up to that point.

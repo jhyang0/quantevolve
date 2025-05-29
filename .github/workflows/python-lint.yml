@@ -13,5 +13,5 @@ jobs:
       - uses: psf/black@stable
         with:
           options: "--check --verbose"
-          src: "./quantevolve ./tests ./examples"
+          src: "./quantevolve ./tests"
           use_pyproject: true
