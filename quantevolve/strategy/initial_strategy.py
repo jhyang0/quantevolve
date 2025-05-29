@@ -1,4 +1,4 @@
-ㄱmport numpy as np
+import numpy as np
 import pandas as pd
 
 def run_strategy(market_data_df: pd.DataFrame, params: list) -> pd.Series:
