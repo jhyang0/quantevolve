@@ -15,6 +15,16 @@ jobs:
       with:
         python-version: '3.9'
 
+    - name: Install TA-Lib C library
+      run: |
+        wget https://github.com/ta-lib/ta-lib/archive/refs/heads/main.tar.gz -O ta-lib-0.6.4-src.tar.gz
+        tar -xzf ta-lib-0.6.4-src.tar.gz
+        cd ta-lib-main/
+        ./configure --prefix=/usr
+        make
+        sudo make install
+        cd ..
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
