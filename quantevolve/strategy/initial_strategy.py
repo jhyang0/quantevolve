@@ -5,7 +5,7 @@ import pandas as pd
 def run_strategy(market_data_df: pd.DataFrame, params: list) -> pd.Series:
     """
     Runs a trading strategy based on the provided market data and parameters.
-    
+
     IMPORTANT: This function should only use data up to the current point
     to prevent look-ahead bias in backtesting.
 
@@ -19,7 +19,7 @@ def run_strategy(market_data_df: pd.DataFrame, params: list) -> pd.Series:
     """
     # Initialize signals with zeros
     signals = pd.Series(index=market_data_df.index, data=0.0)
-    
+
     # Validate parameters
     if len(params) < 2:
         # Return all zeros for invalid parameters
@@ -29,64 +29,62 @@ def run_strategy(market_data_df: pd.DataFrame, params: list) -> pd.Series:
     # Simple Moving Average (SMA) Crossover Strategy
     try:
         short_window = max(2, int(abs(params[0])))  # Minimum 2 for meaningful SMA
-        long_window = max(5, int(abs(params[1])))   # Minimum 5 for meaningful SMA
-        
+        long_window = max(5, int(abs(params[1])))  # Minimum 5 for meaningful SMA
+
         # Ensure we have enough data
         if len(market_data_df) < long_window:
             return signals
-            
+
         # Swap if short > long to maintain logical relationship
         if short_window >= long_window:
             short_window = max(2, long_window - 1)  # Keep short < long
-            
+
         # Calculate SMAs with proper minimum periods to prevent look-ahead bias
-        close_prices = market_data_df['close']
+        close_prices = market_data_df["close"]
         short_sma = close_prices.rolling(
-            window=short_window, 
-            min_periods=short_window  # FIXED: Require full window
+            window=short_window, min_periods=short_window  # FIXED: Require full window
         ).mean()
-        
+
         long_sma = close_prices.rolling(
-            window=long_window, 
-            min_periods=long_window   # FIXED: Require full window
+            window=long_window, min_periods=long_window  # FIXED: Require full window
         ).mean()
-        
+
         # Simple crossover logic - only where we have valid SMAs
         valid_indices = (~short_sma.isna()) & (~long_sma.isna())
-        
+
         if valid_indices.sum() > 1:  # Need at least 2 valid points for crossover
             # Get previous values for crossover detection
             short_prev = short_sma.shift(1)
             long_prev = long_sma.shift(1)
-            
+
             # Buy signal: short crosses above long
             buy_condition = (
-                valid_indices & 
-                (~short_prev.isna()) & 
-                (~long_prev.isna()) &
-                (short_prev <= long_prev) & 
-                (short_sma > long_sma)
+                valid_indices
+                & (~short_prev.isna())
+                & (~long_prev.isna())
+                & (short_prev <= long_prev)
+                & (short_sma > long_sma)
             )
-            
-            # Sell signal: short crosses below long  
+
+            # Sell signal: short crosses below long
             sell_condition = (
-                valid_indices & 
-                (~short_prev.isna()) & 
-                (~long_prev.isna()) &
-                (short_prev >= long_prev) & 
-                (short_sma < long_sma)
+                valid_indices
+                & (~short_prev.isna())
+                & (~long_prev.isna())
+                & (short_prev >= long_prev)
+                & (short_sma < long_sma)
             )
-            
+
             # Apply signals
             signals.loc[buy_condition] = 1.0
             signals.loc[sell_condition] = -1.0
-            
+
     except Exception as e:
         # If any error occurs, return zero signals
         pass
-    
+
     # EVOLVE-BLOCK-END
-    
+
     return signals
 
 

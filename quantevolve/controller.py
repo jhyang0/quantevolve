@@ -326,7 +326,11 @@ class QuantEvolveController:
                     )
                     metrics_str = ", ".join(
                         [
-                            "{0}={1:.4f}".format(name, value) if isinstance(value, (int, float)) else "{0}={1}".format(name, value)
+                            (
+                                "{0}={1:.4f}".format(name, value)
+                                if isinstance(value, (int, float))
+                                else "{0}={1}".format(name, value)
+                            )
                             for name, value in child_program.metrics.items()
                         ]
                     )
@@ -438,13 +442,21 @@ class QuantEvolveController:
         # Format metrics and improvements
         metrics_str = ", ".join(
             [
-                "{0}={1:.4f}".format(name, value) if isinstance(value, (int, float)) else "{0}={1}".format(name, value)
+                (
+                    "{0}={1:.4f}".format(name, value)
+                    if isinstance(value, (int, float))
+                    else "{0}={1}".format(name, value)
+                )
                 for name, value in numeric_metrics.items()
             ]
         )
         improvement_str = ", ".join(
             [
-                "{0}={1:+.4f}".format(name, diff) if isinstance(diff, (int, float)) else "{0}={1}".format(name, diff)
+                (
+                    "{0}={1:+.4f}".format(name, diff)
+                    if isinstance(diff, (int, float))
+                    else "{0}={1}".format(name, diff)
+                )
                 for name, diff in improvement.items()
             ]
         )
