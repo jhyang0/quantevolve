@@ -431,7 +431,7 @@ class QuantEvolveController:
         # Build numeric metrics dict for child (exclude non-numeric metric names)
         numeric_metrics = {}
         excluded_metrics = {"error_message"}  # Only exclude clearly non-numeric metrics
-        
+
         for metric, value in child.metrics.items():
             if metric in excluded_metrics:
                 continue

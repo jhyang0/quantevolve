@@ -565,7 +565,9 @@ class ProgramDatabase:
                     logger.debug(f"Skipping score diff calculation due to type error: {e}")
                     old_score = current_best.metrics["combined_score"]
                     new_score = program.metrics["combined_score"]
-                    logger.info(f"New best program {program.id} replaces {old_id} (combined_score: {old_score} → {new_score})")
+                    logger.info(
+                        f"New best program {program.id} replaces {old_id} (combined_score: {old_score} → {new_score})"
+                    )
             else:
                 logger.info(f"New best program {program.id} replaces {old_id}")
 
