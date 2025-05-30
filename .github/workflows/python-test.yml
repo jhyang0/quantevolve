@@ -17,9 +17,9 @@ jobs:
 
     - name: Install TA-Lib C library
       run: |
-        wget https://github.com/ta-lib/ta-lib/archive/refs/heads/main.tar.gz -O ta-lib-0.6.4-src.tar.gz
-        tar -xzf ta-lib-0.6.4-src.tar.gz
-        cd ta-lib-main/
+        wget https://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
+        tar -xzf ta-lib-0.4.0-src.tar.gz
+        cd ta-lib/
         ./configure --prefix=/usr
         make
         sudo make install

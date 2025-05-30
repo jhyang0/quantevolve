@@ -326,7 +326,7 @@ class QuantEvolveController:
                     )
                     metrics_str = ", ".join(
                         [
-                            "{0}={1:.4f}".format(name, value)
+                            "{0}={1:.4f}".format(name, value) if isinstance(value, (int, float)) else "{0}={1}".format(name, value)
                             for name, value in child_program.metrics.items()
                         ]
                     )
@@ -386,7 +386,7 @@ class QuantEvolveController:
         if best_strategy:
             logger.info(
                 f"Evolution complete. Best strategy ({best_strategy.id}) has metrics: "
-                f"{', '.join(f'{name}={value:.4f}' for name, value in best_strategy.metrics.items())}"
+                f"{', '.join(f'{name}={value:.4f}' if isinstance(value, (int, float)) else f'{name}={value}' for name, value in best_strategy.metrics.items())}"
             )
 
             # Save the best strategy (using our tracked best strategy)
@@ -432,12 +432,22 @@ class QuantEvolveController:
         improvement = {}
         for metric, num_val in numeric_metrics.items():
             parent_val = _safe_float(parent.metrics.get(metric))
-            if parent_val is not None:
+            if parent_val is not None and num_val is not None:
                 improvement[metric] = num_val - parent_val
 
         # Format metrics and improvements
-        metrics_str = ", ".join(f"{name}={val:.4f}" for name, val in numeric_metrics.items())
-        improvement_str = ", ".join(f"{name}={diff:+.4f}" for name, diff in improvement.items())
+        metrics_str = ", ".join(
+            [
+                "{0}={1:.4f}".format(name, value) if isinstance(value, (int, float)) else "{0}={1}".format(name, value)
+                for name, value in numeric_metrics.items()
+            ]
+        )
+        improvement_str = ", ".join(
+            [
+                "{0}={1:+.4f}".format(name, diff) if isinstance(diff, (int, float)) else "{0}={1}".format(name, diff)
+                for name, diff in improvement.items()
+            ]
+        )
 
         logger.info(
             f"Iteration {iteration+1}: Child {child.id} from parent {parent.id} "
@@ -500,7 +510,7 @@ class QuantEvolveController:
 
             logger.info(
                 f"Saved best strategy at checkpoint {iteration} ({best_strategy_at_checkpoint.id}) with metrics: "
-                f"{', '.join(f'{name}={value:.4f}' for name, value in best_strategy_at_checkpoint.metrics.items())}"
+                f"{', '.join(f'{name}={value:.4f}' if isinstance(value, (int, float)) else f'{name}={value}' for name, value in best_strategy_at_checkpoint.metrics.items())}"
             )
 
         logger.info(f"Saved checkpoint at iteration {iteration} to {checkpoint_path}")

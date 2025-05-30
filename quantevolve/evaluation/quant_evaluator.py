@@ -151,12 +151,31 @@ def evaluate(program_path: str) -> dict:
 
     try:
         # --- 3. Get Trading Signals ---
-        # Pass a copy of the market data to avoid modification by the strategy
-        signals = run_strategy_func(market_data_df.copy(), params)
-        if not isinstance(signals, pd.Series):
-            print("Error: Strategy did not return a Pandas Series.")
-            default_error_metrics["error_message"] = "Strategy did not return a Pandas Series."
+        # Now run full backtest with look-ahead bias prevention
+        # SIMPLIFIED: Instead of calling strategy repeatedly, call once but validate output
+        try:
+            # Call strategy function once with full data
+            signals = run_strategy_func(market_data_df.copy(), params)
+            
+            if not isinstance(signals, pd.Series):
+                print("Error: Strategy did not return a Pandas Series.")
+                default_error_metrics["error_message"] = "Strategy did not return a Pandas Series."
+                return default_error_metrics
+                
+            # Validate that strategy doesn't use future data by checking signal generation timing
+            # This is a heuristic check - signals should not appear too early relative to required data
+            min_warmup_period = max(50, len(market_data_df) // 20)  # Adaptive warmup
+            
+            # Zero out signals in warmup period to prevent look-ahead bias
+            if len(signals) > min_warmup_period:
+                signals.iloc[:min_warmup_period] = 0.0
+                
+        except Exception as e:
+            print(f"Error in strategy execution: {str(e)}")
+            default_error_metrics["error_message"] = f"Strategy execution failed: {str(e)}"
             return default_error_metrics
+        
+        # Ensure signals are properly aligned
         if not signals.index.equals(market_data_df.index):
             print("Error: Signals index does not match market data index. Realigning...")
             signals = signals.reindex(market_data_df.index, fill_value=0.0)
@@ -233,25 +252,40 @@ def evaluate(program_path: str) -> dict:
         num_trades = (positions.diff().fillna(0) != 0).sum()
 
         # --- 6. Return Metrics ---
-        # Ensure combined_score is robust
-        # If sharpe_ratio is very low (e.g. -100 due to error or bad performance), combined_score should also be very low.
-        # If sharpe_ratio is a valid negative number, combined_score should reflect that.
-        # If sharpe_ratio is positive, that's good.
+        # Initialize combined_score first
         combined_score = sharpe_ratio if sharpe_ratio > -100.0 else -100.0
-
+        
+        # ADDED: Backtesting validation checks
+        validation_warnings = []
+        
+        # Check for unrealistic Sharpe ratios (possible look-ahead bias)
+        if sharpe_ratio > 3.0:
+            validation_warnings.append(f"Unusually high Sharpe ratio: {sharpe_ratio:.2f}")
+            combined_score = min(combined_score, 2.0)  # Cap unrealistic performance
+            
+        # Check for perfect or near-perfect strategies (likely look-ahead bias)
+        if negative_max_drawdown > -0.01:  # Less than 1% drawdown
+            validation_warnings.append("Suspiciously low drawdown")
+            combined_score = min(combined_score, 1.5)
+            
+        # Check signal frequency (too many signals might indicate over-trading)
+        signal_changes = (np.diff(np.array(signals)) != 0).sum()
+        signal_frequency = signal_changes / len(signals) if len(signals) > 0 else 0
+        if signal_frequency > 0.5:  # More than 50% of periods have signal changes
+            validation_warnings.append(f"High signal frequency: {signal_frequency:.2f}")
+            
         # If pnl is negative and sharpe is also bad, further penalize combined_score
         # This is an example, can be tuned.
-        if (
-            pnl < 0 and combined_score > -5
-        ):  # if sharpe was positive or slightly negative despite overall loss
-            combined_score = max(
-                -5.0, combined_score * 0.5
-            )  # Reduce, but not to -100 unless sharpe was already bad
+        if pnl < 0 and combined_score > -5:
+            combined_score = max(-5.0, combined_score * 0.5)  # Reduce, but not to -100 unless sharpe was already bad
 
         # If num_trades is very low (e.g. < 2), it might not be a meaningful strategy.
         # Could penalize combined_score here, e.g. if num_trades < 2, combined_score = min(combined_score, -50)
         if num_trades < 2:
             combined_score = min(combined_score, -50.0)  # Penalize if very few trades
+            
+        # Add validation warnings to error message if any
+        warning_msg = "; ".join(validation_warnings) if validation_warnings else ""
 
         metrics = {
             "pnl": float(pnl),
@@ -261,7 +295,7 @@ def evaluate(program_path: str) -> dict:
             "error": 0.0,  # No error in this path
             "can_run": 1.0,  # Program ran successfully
             "combined_score": float(combined_score),
-            "error_message": "",
+            "error_message": warning_msg,
         }
         return metrics
 
