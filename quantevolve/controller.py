@@ -420,14 +420,21 @@ class QuantEvolveController:
         """
 
         def _safe_float(val):
+            # Skip obviously non-numeric values
+            if isinstance(val, str) and val.strip() == "":
+                return None
             try:
                 return float(val)
             except (ValueError, TypeError):
                 return None
 
-        # Build numeric metrics dict for child
+        # Build numeric metrics dict for child (exclude non-numeric metric names)
         numeric_metrics = {}
+        excluded_metrics = {"error_message"}  # Only exclude clearly non-numeric metrics
+        
         for metric, value in child.metrics.items():
+            if metric in excluded_metrics:
+                continue
             num_val = _safe_float(value)
             if num_val is not None:
                 numeric_metrics[metric] = num_val
@@ -437,15 +444,20 @@ class QuantEvolveController:
         for metric, num_val in numeric_metrics.items():
             parent_val = _safe_float(parent.metrics.get(metric))
             if parent_val is not None and num_val is not None:
-                improvement[metric] = num_val - parent_val
+                try:
+                    improvement[metric] = num_val - parent_val
+                except (TypeError, ValueError) as e:
+                    # Skip metrics that can't be compared numerically
+                    logger.debug(f"Skipping metric {metric} due to type error: {e}")
+                    continue
 
         # Format metrics and improvements
         metrics_str = ", ".join(
             [
                 (
                     "{0}={1:.4f}".format(name, value)
-                    if isinstance(value, (int, float))
-                    else "{0}={1}".format(name, value)
+                    if isinstance(value, (int, float)) and not isinstance(value, bool)
+                    else "{0}={1}".format(name, str(value))
                 )
                 for name, value in numeric_metrics.items()
             ]
@@ -454,8 +466,8 @@ class QuantEvolveController:
             [
                 (
                     "{0}={1:+.4f}".format(name, diff)
-                    if isinstance(diff, (int, float))
-                    else "{0}={1}".format(name, diff)
+                    if isinstance(diff, (int, float)) and not isinstance(diff, bool)
+                    else "{0}={1}".format(name, str(diff))
                 )
                 for name, diff in improvement.items()
             ]

@@ -225,11 +225,17 @@ class ProgramDatabase:
                 and "combined_score" in self.programs[old_id].metrics
                 and "combined_score" in self.programs[self.best_program_id].metrics
             ):
-                old_score = self.programs[old_id].metrics["combined_score"]
-                new_score = self.programs[self.best_program_id].metrics["combined_score"]
-                logger.info(
-                    f"Score change: {old_score:.4f} → {new_score:.4f} ({new_score-old_score:+.4f})"
-                )
+                try:
+                    old_score = float(self.programs[old_id].metrics["combined_score"])
+                    new_score = float(self.programs[self.best_program_id].metrics["combined_score"])
+                    logger.info(
+                        f"Score change: {old_score:.4f} → {new_score:.4f} ({new_score-old_score:+.4f})"
+                    )
+                except (ValueError, TypeError) as e:
+                    logger.debug(f"Skipping score change calculation due to type error: {e}")
+                    old_score = self.programs[old_id].metrics["combined_score"]
+                    new_score = self.programs[self.best_program_id].metrics["combined_score"]
+                    logger.info(f"Score change: {old_score} → {new_score}")
 
         return sorted_programs[0] if sorted_programs else None
 
@@ -548,12 +554,18 @@ class ProgramDatabase:
 
             # Log the change
             if "combined_score" in program.metrics and "combined_score" in current_best.metrics:
-                old_score = current_best.metrics["combined_score"]
-                new_score = program.metrics["combined_score"]
-                score_diff = new_score - old_score
-                logger.info(
-                    f"New best program {program.id} replaces {old_id} (combined_score: {old_score:.4f} → {new_score:.4f}, +{score_diff:.4f})"
-                )
+                try:
+                    old_score = float(current_best.metrics["combined_score"])
+                    new_score = float(program.metrics["combined_score"])
+                    score_diff = new_score - old_score
+                    logger.info(
+                        f"New best program {program.id} replaces {old_id} (combined_score: {old_score:.4f} → {new_score:.4f}, +{score_diff:.4f})"
+                    )
+                except (ValueError, TypeError) as e:
+                    logger.debug(f"Skipping score diff calculation due to type error: {e}")
+                    old_score = current_best.metrics["combined_score"]
+                    new_score = program.metrics["combined_score"]
+                    logger.info(f"New best program {program.id} replaces {old_id} (combined_score: {old_score} → {new_score})")
             else:
                 logger.info(f"New best program {program.id} replaces {old_id}")
 
